@@ -37,11 +37,11 @@ const TaskList = () => {
       id: Date.now(),
       text: newTaskText,
       timeSpent: 0,
-      difficulty: 'medium',
+      difficulty: '',
       dateCompleted: getCurrentDateTime()
     }
     
-    const updatedTasks = [...tasks, newTask]
+    const updatedTasks = [newTask, ...tasks]
     setTasks(updatedTasks)
     localStorage.setItem('tasks', JSON.stringify(updatedTasks))
     setNewTaskText('')
@@ -105,6 +105,7 @@ const TaskList = () => {
   ]
 
   const difficultyOptions = [
+    { value: '', label: 'Select difficulty', color: 'text-gray-600' },
     { value: 'easy', label: 'Easy', color: 'text-green-600' },
     { value: 'medium', label: 'Medium', color: 'text-yellow-600' },
     { value: 'hard', label: 'Hard', color: 'text-orange-600' },
