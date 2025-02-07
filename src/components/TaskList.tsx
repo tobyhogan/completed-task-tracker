@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import prisma from '../lib/db'
 
 interface Task {
   id: number
@@ -9,127 +8,73 @@ interface Task {
   dateCompleted: string // Store as ISO string with time
 }
 
+// Helper function to get tasks from localStorage
+const getStoredTasks = (): Task[] => {
+  const savedTasks = localStorage.getItem('tasks')
+  return savedTasks ? JSON.parse(savedTasks) : []
+}
+
 const TaskList = () => {
-  const [tasks, setTasks] = useState<Task[]>([])
+  // Initialize state with tasks from localStorage
+  const [tasks, setTasks] = useState<Task[]>(getStoredTasks())
   const [newTaskText, setNewTaskText] = useState('')
   const [openMenuId, setOpenMenuId] = useState<number | null>(null)
 
-  // Fetch tasks on component mount
+  // Save tasks to localStorage whenever they change
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const response = await fetch('/api/tasks')
-        const data = await response.json()
-        setTasks(data)
-      } catch (error) {
-        console.error('Error fetching tasks:', error)
-      }
-    }
-    fetchTasks()
-  }, [])
+    localStorage.setItem('tasks', JSON.stringify(tasks))
+  }, [tasks])
 
   const getCurrentDateTime = () => {
     const now = new Date()
     return now.toISOString().slice(0, 16) // Format: "YYYY-MM-DDThh:mm"
   }
 
-  const addTask = async () => {
+  const addTask = () => {
     if (newTaskText.trim() === '') return
     
-    const newTask = {
+    const newTask: Task = {
+      id: Date.now(),
       text: newTaskText,
       timeSpent: 0,
       difficulty: 'medium',
       dateCompleted: getCurrentDateTime()
     }
     
-    try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newTask),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create task')
-      }
-
-      const savedTask = await response.json()
-      setTasks([...tasks, savedTask])
-      setNewTaskText('')
-    } catch (error) {
-      console.error('Error adding task:', error)
-      // Optionally show error to user
-      alert('Failed to add task: ' + error.message)
-    }
+    const updatedTasks = [...tasks, newTask]
+    setTasks(updatedTasks)
+    localStorage.setItem('tasks', JSON.stringify(updatedTasks))
+    setNewTaskText('')
   }
 
-  const deleteTask = async (taskId: number) => {
-    try {
-      await fetch(`/api/tasks/${taskId}`, {
-        method: 'DELETE',
-      })
-      setTasks(tasks.filter(task => task.id !== taskId))
-    } catch (error) {
-      console.error('Error deleting task:', error)
-    }
+  const deleteTask = (taskId: number) => {
+    const updatedTasks = tasks.filter(task => task.id !== taskId)
+    setTasks(updatedTasks)
+    localStorage.setItem('tasks', JSON.stringify(updatedTasks))
   }
 
-  const updateTimeSpent = async (taskId: number, newTime: number) => {
-    try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ timeSpent: newTime }),
-      })
-      const updatedTask = await response.json()
-      setTasks(tasks.map(task =>
-        task.id === taskId ? updatedTask : task
-      ))
-    } catch (error) {
-      console.error('Error updating time spent:', error)
-    }
+  const updateTimeSpent = (taskId: number, newTime: number) => {
+    const updatedTasks = tasks.map(task =>
+      task.id === taskId ? { ...task, timeSpent: newTime } : task
+    )
+    setTasks(updatedTasks)
+    localStorage.setItem('tasks', JSON.stringify(updatedTasks))
   }
 
-  const updateDifficulty = async (taskId: number, difficulty: string) => {
-    try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ difficulty }),
-      })
-      const updatedTask = await response.json()
-      setTasks(tasks.map(task =>
-        task.id === taskId ? updatedTask : task
-      ))
-    } catch (error) {
-      console.error('Error updating difficulty:', error)
-    }
+  const updateDifficulty = (taskId: number, difficulty: string) => {
+    const updatedTasks = tasks.map(task =>
+      task.id === taskId ? { ...task, difficulty } : task
+    )
+    setTasks(updatedTasks)
+    localStorage.setItem('tasks', JSON.stringify(updatedTasks))
   }
 
-  const updateDateCompleted = async (taskId: number, date: string) => {
-    try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ dateCompleted: date }),
-      })
-      const updatedTask = await response.json()
-      setTasks(tasks.map(task =>
-        task.id === taskId ? updatedTask : task
-      ))
-    } catch (error) {
-      console.error('Error updating date:', error)
-    }
+  const updateDateCompleted = (taskId: number, date: string) => {
+    const updatedTasks = tasks.map(task =>
+      task.id === taskId ? { ...task, dateCompleted: date } : task
+    )
+    setTasks(updatedTasks)
+    localStorage.setItem('tasks', JSON.stringify(updatedTasks))
   }
 
   const formatDate = (dateString: string): string => {
